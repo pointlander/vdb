@@ -20,6 +20,19 @@ type Vector struct {
 	Label   string
 }
 
+// VDB is a vector database
+type VDB struct {
+	Width int
+	Rows  []Vector
+}
+
+// NewVDB makes a new vector database
+func NewVDB(width int) VDB {
+	return VDB{
+		Width: width,
+	}
+}
+
 func dot(a []float64, b []float64) float64 {
 	sum := 0.0
 	for i, v := range a {
@@ -28,10 +41,10 @@ func dot(a []float64, b []float64) float64 {
 	return sum
 }
 
-func dotT(a []float64, b []Vector, col int) float64 {
+func dotT(a []float64, b VDB, col int) float64 {
 	sum := 0.0
 	for i, v := range a {
-		sum += v * b[i].V[col]
+		sum += v * b.Rows[i].V[col]
 	}
 	return sum
 }
@@ -55,17 +68,17 @@ func softmax(values []float64) {
 }
 
 // SelfEntropy computes the self entropy of X
-func SelfEntropy(x []Vector) []float64 {
-	cols, rows := len(x[0].V), len(x)
+func (v VDB) SelfEntropy() []float64 {
+	cols, rows := v.Width, len(v.Rows)
 	entropies, values, results := make([]float64, cols), make([]float64, rows), make([]float64, 0, rows)
-	for _, k := range x {
-		for j, q := range x {
+	for _, k := range v.Rows {
+		for j, q := range v.Rows {
 			values[j] = dot(k.V, q.V)
 		}
 		softmax(values)
 
 		for j := 0; j < cols; j++ {
-			entropies[j] = dotT(values, x, j)
+			entropies[j] = dotT(values, v, j)
 		}
 		softmax(entropies)
 

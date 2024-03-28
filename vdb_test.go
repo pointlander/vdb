@@ -16,22 +16,23 @@ func TestSelfEntropy(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	vdb := make([]Vector, len(datum.Fisher))
+	vdb := NewVDB(4)
+	vdb.Rows = make([]Vector, len(datum.Fisher))
 	for i, v := range datum.Fisher {
 		measures := make([]float64, len(v.Measures))
 		copy(measures, v.Measures)
-		vdb[i].V = measures
-		vdb[i].Label = v.Label
+		vdb.Rows[i].V = measures
+		vdb.Rows[i].Label = v.Label
 	}
-	entropy := SelfEntropy(vdb)
+	entropy := vdb.SelfEntropy()
 	for i, e := range entropy {
-		vdb[i].Entropy = e
+		vdb.Rows[i].Entropy = e
 	}
-	sort.Slice(vdb, func(i, j int) bool {
-		return vdb[i].Entropy < vdb[j].Entropy
+	sort.Slice(vdb.Rows, func(i, j int) bool {
+		return vdb.Rows[i].Entropy < vdb.Rows[j].Entropy
 	})
 	last, count := "", 0
-	for i, v := range vdb {
+	for i, v := range vdb.Rows {
 		if last != v.Label {
 			count++
 		}
