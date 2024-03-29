@@ -68,10 +68,10 @@ func softmax(values []float64) {
 }
 
 // SelfEntropy computes the self entropy of X
-func (v VDB) SelfEntropy() []float64 {
+func (v VDB) SelfEntropy() {
 	cols, rows := v.Width, len(v.Rows)
-	entropies, values, results := make([]float64, cols), make([]float64, rows), make([]float64, 0, rows)
-	for _, k := range v.Rows {
+	entropies, values := make([]float64, cols), make([]float64, rows)
+	for i, k := range v.Rows {
 		for j, q := range v.Rows {
 			values[j] = dot(k.V, q.V)
 		}
@@ -86,9 +86,8 @@ func (v VDB) SelfEntropy() []float64 {
 		for _, e := range entropies {
 			entropy += e * math.Log(e)
 		}
-		results = append(results, -entropy)
+		v.Rows[i].Entropy = -entropy
 	}
-	return results
 }
 
 func main() {
