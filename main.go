@@ -74,6 +74,14 @@ func softmax(values []float64) {
 	}
 }
 
+// Slice takes a slice of the vdb
+func (v VDB) Slice(begin, end int) VDB {
+	return VDB{
+		Width: v.Width,
+		Rows:  v.Rows[begin:end],
+	}
+}
+
 // SelfEntropy computes the self entropy of X
 func (v VDB) SelfEntropy() {
 	cols, rows := v.Width, len(v.Rows)
@@ -121,11 +129,16 @@ func main() {
 		})
 	}
 	fmt.Println("calculating entropy")
-	db.SelfEntropy()
-	fmt.Println("sorting database")
-	sort.Slice(db.Rows, func(i, j int) bool {
-		return db.Rows[i].Entropy < db.Rows[j].Entropy
-	})
+	for j := 0; j < 2; j++ {
+		for i := 0; i < len(db.Rows)-100; i += 100 {
+			s := db.Slice(i, i+100)
+			s.SelfEntropy()
+		}
+		sort.Slice(db.Rows, func(i, j int) bool {
+			return db.Rows[i].Entropy < db.Rows[j].Entropy
+		})
+	}
+	fmt.Println("saving data")
 	output, err := os.Create("mnist.db")
 	if err != nil {
 		panic(err)
