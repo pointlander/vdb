@@ -59,8 +59,13 @@ func TestMNIST(t *testing.T) {
 		if datum.Train.Labels[i] == query {
 			t.Log(query)
 			vector := make([]float64, len(image))
+			sum := 0.0
 			for i, value := range image {
 				vector[i] = float64(value)
+				sum += float64(value)
+			}
+			for i, v := range vector {
+				vector[i] = v / sum
 			}
 			key.Rows = append(key.Rows, Vector{
 				V:     vector,
@@ -78,8 +83,13 @@ func TestMNIST(t *testing.T) {
 	db := NewVDB(datum.Train.Width * datum.Train.Height)
 	for i, image := range datum.Train.Images {
 		vector := make([]float64, len(image))
+		sum := 0.0
 		for j, value := range image {
 			vector[j] = float64(value)
+			sum += float64(value)
+		}
+		for i, v := range vector {
+			vector[i] = v / sum
 		}
 		key.Rows[len(key.Rows)-1] = Vector{
 			V:     vector,
@@ -96,8 +106,13 @@ func TestMNIST(t *testing.T) {
 	correct := 0
 	for i, image := range datum.Test.Images {
 		vector := make([]float64, len(image))
+		sum := 0.0
 		for j, value := range image {
 			vector[j] = float64(value)
+			sum += float64(value)
+		}
+		for i, v := range vector {
+			vector[i] = v / sum
 		}
 		key.Rows[len(key.Rows)-1] = Vector{
 			V:     vector,
