@@ -5,7 +5,14 @@
 package main
 
 import (
+	"encoding/gob"
+	"fmt"
 	"math"
+	"os"
+	"sort"
+	"strconv"
+
+	"github.com/pointlander/datum/mnist"
 )
 
 const (
@@ -91,5 +98,42 @@ func (v VDB) SelfEntropy() {
 }
 
 func main() {
+	datum, err := mnist.Load()
+	if err != nil {
+		panic(err)
+	}
 
+	fmt.Println("loading database")
+	db := NewVDB(datum.Train.Width * datum.Train.Height)
+	for i, image := range datum.Train.Images {
+		vector := make([]float64, len(image))
+		sum := 0.0
+		for j, value := range image {
+			vector[j] = float64(value)
+			sum += float64(value)
+		}
+		for i, v := range vector {
+			vector[i] = v / sum
+		}
+		db.Rows = append(db.Rows, Vector{
+			V:     vector,
+			Label: strconv.Itoa(int(datum.Train.Labels[i])),
+		})
+	}
+	fmt.Println("calculating entropy")
+	db.SelfEntropy()
+	fmt.Println("sorting database")
+	sort.Slice(db.Rows, func(i, j int) bool {
+		return db.Rows[i].Entropy < db.Rows[j].Entropy
+	})
+	output, err := os.Create("mnist.db")
+	if err != nil {
+		panic(err)
+	}
+	defer output.Close()
+	encoder := gob.NewEncoder(output)
+	err = encoder.Encode(db)
+	if err != nil {
+		panic(err)
+	}
 }
