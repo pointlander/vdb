@@ -67,7 +67,7 @@ func TestMNIST(t *testing.T) {
 				Label: strconv.Itoa(int(query)),
 			})
 			count++
-			if count == 5 {
+			if count == 7 {
 				query++
 				count = 0
 			}
