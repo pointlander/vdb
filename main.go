@@ -5,10 +5,9 @@
 package main
 
 import (
-	"encoding/gob"
 	"fmt"
 	"math"
-	"os"
+	"runtime"
 	"sort"
 	"strconv"
 
@@ -25,6 +24,7 @@ type Vector struct {
 	V       []float64
 	Entropy float64
 	Label   string
+	Type    int
 }
 
 // VDB is a vector database
@@ -38,14 +38,6 @@ func NewVDB(width int) VDB {
 	return VDB{
 		Width: width,
 	}
-}
-
-func dot(a []float64, b []float64) float64 {
-	sum := 0.0
-	for i, v := range a {
-		sum += v * b[i]
-	}
-	return sum
 }
 
 func dotT(a []float64, b VDB, col int) float64 {
@@ -107,10 +99,29 @@ func (v VDB) SelfEntropy() {
 
 // Rainbow computes the rainbow algorithm
 func (v VDB) Rainbow(iterations int) {
+	cpus, done := runtime.NumCPU(), make(chan bool, 8)
+	process := func(begin, end int) {
+		s := v.Slice(begin, end)
+		s.SelfEntropy()
+		done <- true
+	}
 	for j := 0; j < iterations; j++ {
-		for i := 0; i < len(v.Rows)-100; i += 100 {
-			s := v.Slice(i, i+100)
-			s.SelfEntropy()
+		i, flight := 0, 0
+		for i < len(v.Rows)-100 && flight < cpus {
+			go process(i, i+100)
+			i += 100
+			flight++
+		}
+		for i < len(v.Rows)-100 {
+			<-done
+			flight--
+
+			go process(i, i+100)
+			i += 100
+			flight++
+		}
+		for k := 0; k < flight; k++ {
+			<-done
 		}
 		sort.Slice(v.Rows, func(i, j int) bool {
 			return v.Rows[i].Entropy < v.Rows[j].Entropy
@@ -141,17 +152,33 @@ func main() {
 			Label: strconv.Itoa(int(datum.Train.Labels[i])),
 		})
 	}
+	for i, image := range datum.Test.Images {
+		vector := make([]float64, len(image))
+		sum := 0.0
+		for j, value := range image {
+			vector[j] = float64(value)
+			sum += float64(value)
+		}
+		for i, v := range vector {
+			vector[i] = v / sum
+		}
+		db.Rows = append(db.Rows, Vector{
+			V:     vector,
+			Label: strconv.Itoa(int(datum.Test.Labels[i])),
+			Type:  1,
+		})
+	}
 	fmt.Println("calculating entropy")
-	db.Rainbow(2)
-	fmt.Println("saving data")
-	output, err := os.Create("mnist.db")
-	if err != nil {
-		panic(err)
+	db.Rainbow(32)
+	fmt.Println("testing db")
+	correct := 0
+	for i, row := range db.Rows {
+		if row.Type == 1 {
+			index := i + 1
+			if row.Label == db.Rows[index].Label {
+				correct++
+			}
+		}
 	}
-	defer output.Close()
-	encoder := gob.NewEncoder(output)
-	err = encoder.Encode(db)
-	if err != nil {
-		panic(err)
-	}
+	fmt.Println(correct)
 }
