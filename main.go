@@ -74,6 +74,21 @@ func (v VDB) Slice(begin, end int) VDB {
 	}
 }
 
+// Len is the length of the array
+func (v VDB) Len() int {
+	return len(v.Rows)
+}
+
+// Less is less if the entropy is less
+func (v VDB) Less(i, j int) bool {
+	return v.Rows[i].Entropy < v.Rows[j].Entropy
+}
+
+// Swap swaps two entries
+func (v VDB) Swap(i, j int) {
+	v.Rows[i], v.Rows[j] = v.Rows[j], v.Rows[i]
+}
+
 // SelfEntropy computes the self entropy of X
 func (v VDB) SelfEntropy() {
 	cols, rows := v.Width, len(v.Rows)
@@ -106,6 +121,7 @@ func (v VDB) Rainbow(iterations int) {
 		done <- true
 	}
 	for j := 0; j < iterations; j++ {
+		fmt.Println(j)
 		i, flight := 0, 0
 		for i < len(v.Rows)-100 && flight < cpus {
 			go process(i, i+100)
@@ -123,9 +139,10 @@ func (v VDB) Rainbow(iterations int) {
 		for k := 0; k < flight; k++ {
 			<-done
 		}
-		sort.Slice(v.Rows, func(i, j int) bool {
-			return v.Rows[i].Entropy < v.Rows[j].Entropy
-		})
+		if sort.IsSorted(v) {
+			break
+		}
+		sort.Sort(v)
 	}
 }
 
