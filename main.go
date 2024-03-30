@@ -105,6 +105,19 @@ func (v VDB) SelfEntropy() {
 	}
 }
 
+// Rainbow computes the rainbow algorithm
+func (v VDB) Rainbow(iterations int) {
+	for j := 0; j < iterations; j++ {
+		for i := 0; i < len(v.Rows)-100; i += 100 {
+			s := v.Slice(i, i+100)
+			s.SelfEntropy()
+		}
+		sort.Slice(v.Rows, func(i, j int) bool {
+			return v.Rows[i].Entropy < v.Rows[j].Entropy
+		})
+	}
+}
+
 func main() {
 	datum, err := mnist.Load()
 	if err != nil {
@@ -129,15 +142,7 @@ func main() {
 		})
 	}
 	fmt.Println("calculating entropy")
-	for j := 0; j < 2; j++ {
-		for i := 0; i < len(db.Rows)-100; i += 100 {
-			s := db.Slice(i, i+100)
-			s.SelfEntropy()
-		}
-		sort.Slice(db.Rows, func(i, j int) bool {
-			return db.Rows[i].Entropy < db.Rows[j].Entropy
-		})
-	}
+	db.Rainbow(2)
 	fmt.Println("saving data")
 	output, err := os.Create("mnist.db")
 	if err != nil {
