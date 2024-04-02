@@ -123,12 +123,12 @@ func (v VDB) Rainbow(iterations int) {
 	for j := 0; j < iterations; j++ {
 		fmt.Println(j)
 		i, flight := 0, 0
-		for i < len(v.Rows)-100 && flight < cpus {
+		for i <= len(v.Rows)-100 && flight < cpus {
 			go process(i, i+100)
 			i += 100
 			flight++
 		}
-		for i < len(v.Rows)-100 {
+		for i <= len(v.Rows)-100 {
 			<-done
 			flight--
 
